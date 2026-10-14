@@ -144,6 +144,51 @@
             Database: ({cls}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={cls || "w-6 h-6"}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
         };
 
+        const cariDataFirebaseMultiField = async (dbInstance, searchQuery) => {
+            if (!dbInstance || !searchQuery) return null;
+
+            const queryClean = searchQuery.replace(/\s+/g, '').toUpperCase();
+            const queryRaw = searchQuery.trim().toUpperCase();
+
+            try {
+                // STEP 1: Direct Doc ID lookup (Instant for Nopol)
+                const docDirect = await dbInstance.collection('pencarian').doc(queryClean).get();
+                if (docDirect.exists) {
+                    return docDirect.data();
+                }
+
+                // STEP 2: Parallel execution across all potential vehicle database fields
+                const collectionRef = dbInstance.collection('pencarian');
+                const targetFields = [
+                    'nopol', 'Nopol', 'no_polisi', 'NopolServer',
+                    'no_rangka', 'NoRangka', 'noka', 'vin', 'no_frame',
+                    'no_mesin', 'NoMesin', 'nosin', 'no_engine',
+                    'ktp', 'nik', 'NIK', 'NoKTP', 'no_ktp', 'identitas', 'no_identitas',
+                    'nama', 'NamaPemilik', 'nama_pemilik', 'Nama', 'nm_pmlk'
+                ];
+
+                const queryPromises = [];
+                for (const fieldName of targetFields) {
+                    queryPromises.push(collectionRef.where(fieldName, "==", queryClean).limit(1).get());
+                    if (queryRaw !== queryClean) {
+                        queryPromises.push(collectionRef.where(fieldName, "==", queryRaw).limit(1).get());
+                    }
+                }
+
+                const snapshots = await Promise.all(queryPromises);
+                for (const snapshot of snapshots) {
+                    if (!snapshot.empty) {
+                        return snapshot.docs[0].data();
+                    }
+                }
+
+                return null;
+            } catch (error) {
+                console.warn("Firebase multi-field query error:", error);
+                return null;
+            }
+        };
+
         const App = () => {
             let isAlreadyLoggedIn = false;
             let savedRole = 'user';
@@ -556,7 +601,7 @@
 
             const fetchData = async () => {
                 const rawPlate = plate.trim().toUpperCase();
-                if (!rawPlate) { showMsg("MASUKKAN PLAT NOMOR"); return; }
+                if (!rawPlate) { showMsg("MASUKKAN NOPOL / NOKA / NOSIN / NIK / NAMA"); return; }
                 
                 if (isMaintenance && activePin !== 'MASTER') {
                     showMsg("SISTEM SEDANG PEMELIHARAAN (MAINTENANCE)");
@@ -585,23 +630,27 @@
 
                 setLoading(true);
 
+                // 1. CARI MULTI-FIELD FIREBASE SECARA INSTAN (Nopol, Noka, Nosin, NIK, Nama)
+                if (db) {
+                    try {
+                        const firebaseResult = await cariDataFirebaseMultiField(db, rawPlate);
+                        if (firebaseResult) {
+                            incrementDailyCount();
+                            setSearchResult(firebaseResult);
+                            setCurrentPage('result');
+                            setLoading(false);
+                            showMsg("DATA DI TEMUKAN");
+                            return;
+                        }
+                    } catch (e) {
+                        console.warn("Firebase Search Error, switching to API/Offline:", e);
+                    }
+                }
+
                 const cleanQuery = rawPlate.replace(/\s+/g, '').toLowerCase();
                 const offlineMatch = rawPlate.replace(/\s+/g, '').toUpperCase();
 
-                if (db) {
-                    try {
-                        const docSnap = await db.collection('pencarian').doc(cleanQuery.toUpperCase()).get();
-                        if (docSnap.exists) {
-                            incrementDailyCount();
-                            setSearchResult(docSnap.data());
-                            setCurrentPage('result');
-                            setLoading(false);
-                            showMsg("DATA DITEMUKAN");
-                            return;
-                        }
-                    } catch (e) {}
-                }
-
+                // 2. CEK DATABASE OFFLINE SAMSAT
                 if (OFFLINE_SAMSAT_DATABASE[offlineMatch]) {
                     incrementDailyCount();
                     setSearchResult(OFFLINE_SAMSAT_DATABASE[offlineMatch]);
@@ -610,6 +659,7 @@
                     return;
                 }
 
+                // 3. CEK SESSION CACHE
                 try {
                     const cached = sessionStorage.getItem(cleanQuery);
                     if (cached) {
@@ -621,6 +671,7 @@
                     }
                 } catch (e) {}
 
+                // 4. PENCARIAN KE SERVER API UTAMA
                 const baseUrls = [
                   `${customApi1 || API_UTAMA_1}${encodeURIComponent(cleanQuery)}`,
                   `${customApi2 || API_UTAMA_2}${encodeURIComponent(cleanQuery)}`,
@@ -794,7 +845,7 @@
 
             return (
                 <div className="mobile-shell bg-black">
-                    {/* HALAMAN WELCOME */}
+                    {}
                     {currentPage === 'welcome' && (
                         <div className="flex-1 flex flex-col items-center justify-between py-12 px-8 h-full relative overflow-y-auto scrollbar-hide">
                             <div className="absolute top-[-10%] left-[-10%] w-[80%] h-[40%] bg-purple-600/10 blur-[150px] rounded-full" />
@@ -819,7 +870,7 @@
                         </div>
                     )}
 
-                    {/* HALAMAN SEARCH */}
+                    {}
                     {currentPage === 'search' && (
                         <div className="flex-1 flex flex-col h-full bg-black">
                             <header className="px-6 py-5 flex items-center justify-between border-b border-white/5 bg-black/80 backdrop-blur-md z-50">
@@ -903,7 +954,7 @@
                         </div>
                     )}
 
-                    {/* HALAMAN RESULT */}
+                    {}
                     {currentPage === 'result' && (
                         <div className="flex-1 flex flex-col h-full bg-black relative overflow-hidden">
                             <header className="px-6 py-6 flex items-center justify-between border-b border-white/5 bg-black/80 backdrop-blur-md z-40">
@@ -1438,6 +1489,7 @@
                         </div>
                     )}
 
+                    {}
                     {/* MODAL KONFIRMASI */}
                     {confirmModal && (
                         <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-6">
@@ -1534,7 +1586,7 @@
                                 <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden relative mb-6 border border-purple-500/30 shadow-inner">
                                     <div className="absolute h-full bg-purple-500 rounded-full animate-line-bar shadow-[0_0_12px_rgba(168,85,247,0.8)]" />
                                 </div>
-                                <p className="text-white font-black uppercase text-[10px] tracking-[0.5em] animate-pulse">Sedang Mencari Data...</p>
+                                <p className="text-white font-black uppercase text-[10px] tracking-[0.5em] animate-pulse">MEMPEROSES DATA...</p>
                             </div>
                         </div>
                     )}
