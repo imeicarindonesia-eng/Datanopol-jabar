@@ -756,6 +756,7 @@
                     case 'Nama': return extractField(item, ['nama', 'NamaPemilik', 'nama_pemilik', 'Nama', 'nm_pmlk']);
                     case 'NIK': return extractField(item, ['ktp', 'NIK', 'NoKTP', 'nik', 'no_ktp', 'identitas', 'no_identitas']);
                     case 'HP': return extractField(item, ['hp', 'NoHP', 'MSSDN', 'msisdn', 'phone', 'no_hp', 'no_telp']);
+                    case 'Email': return extractField(item, ['email', 'Email', 'alamat_email']);
                     case 'Pekerjaan': return extractField(item, ['pekerjaan', 'Pekerjaan', 'job', 'pekerjaan_pemilik']);
                     case 'Alamat': return extractField(item, ['alamat', 'Alamat', 'alamat_pemilik']);
                     case 'NopolServer': {
@@ -768,8 +769,14 @@
                     case 'Merk': return extractField(item, ['merk', 'Merk', 'Merek', 'merek', 'brand']);
                     case 'Tipe': return extractField(item, ['type', 'Type', 'Tipe', 'tipe', 'model']);
                     case 'Tahun': return extractField(item, ['tahun', 'TahunPembuatan', 'Tahun', 'tahun_pembuatan', 'th_buat']);
-                    case 'Warna': return extractField(item, ['warna', 'Warna', 'warna_tnkb', 'warna_kendaraan']);
+                    case 'Warna': return extractField(item, ['warna', 'Warna', 'warna_kendaraan']);
+                    case 'WarnaTNKB': return extractField(item, ['warna_tnkb', 'WarnaTNKB', 'tnkb_warna', 'warna_plat']);
                     case 'CC': return extractField(item, ['cylinder', 'IsiCylinder', 'Cylinder', 'isi_silinder', 'cc']);
+                    case 'CC_Formatted': {
+                        const val = extractField(item, ['cylinder', 'IsiCylinder', 'Cylinder', 'isi_silinder', 'cc']);
+                        if (val === '-') return '-';
+                        return val.toUpperCase().includes('CC') ? val : `${val} CC`;
+                    }
                     case 'BBM': return extractField(item, ['NamaBBM', 'jenis_bbm', 'bahan_bakar', 'BahanBakar', 'bbm', 'BBM']);
                     case 'Noka': return extractField(item, ['no_rangka', 'NoRangka', 'noka', 'vin', 'no_frame']);
                     case 'Nosin': return extractField(item, ['no_mesin', 'NoMesin', 'nosin', 'no_engine']);
@@ -969,7 +976,43 @@
                                     <p className="text-[10px] font-black text-purple-400 tracking-wider uppercase">INFORMASI KENDARAAN :</p>
                                 </div>
                                 <div className="bg-black border border-white/5 rounded-[2.5rem] p-8 font-mono-custom text-[13px] text-white/90 leading-relaxed whitespace-pre-wrap break-words w-full shadow-2xl shimmer pointer-events-auto">
-                                    {`DIKIRIM VIA APLIKASI "𝐃𝐀𝐓𝐀 𝐍𝐎𝐏𝐎𝐋"\nINSTAL APLIKASI :\nhttps://wa.me/6282125554445\n_________________________________________\n\nPEMILIK KENDARAAN SAH :\n\n- NAMA : ${getVal('Nama')}\n- NIK : ${getVal('NIK')}\n- MSSDN : ${getVal('HP')}\n- PEKERJAAN : ${getVal('Pekerjaan')}\n\nALAMAT : ${getVal('Alamat')}\n\nDATA KENDARAAN SAH :\n\n- NO.PLAT : ${getVal('NopolServer')}\n- MEREK : ${getVal('Merk')}\n- TYPE : ${getVal('Tipe')}\n- TAHUN : ${getVal('Tahun')}\n- WARNA : ${getVal('Warna')}\n- CYLINDER : ${getVal('CC')}\n- NAMA BBM : ${getVal('BBM')}\n\nDOKUMEN KENDARAAN SAH :\n\n- NOKA : ${getVal('Noka')}\n- NOSIN : ${getVal('Nosin')}\n- NO. BPKB : ${getVal('BPKB')}\n- NO. STNK : ${getVal('STNK')}\n- TGL DAFTAR : ${getVal('Tgl')}\n- APM : ${getVal('APM')}\n\nHASIL PENCARIAN DATA NOPOL INI TIDAK BOLEH DI SALAH GUNAKAN HANYA UNTUK INTERNAL DAN INVESTIGASI LAPANGAN.`}
+                                    {`INFORMASI KENDARAAN ✅
+════════════════
+DIKIRIM VIA APLIKASI "𝐃𝐀𝐓𝐀 𝐍𝐎𝐏𝐎𝐋 𝐕𝟐"
+INSTAL APLIKASI :
+https://wa.me/6282125554445
+════════════════
+🚘 DATA KENDARAAN :
+
+NO PLAT : ${getVal('NopolServer')}
+NOKA : ${getVal('Noka')}
+NOSIN : ${getVal('Nosin')}
+MEREK : ${getVal('Merk')}
+TYPE : ${getVal('Tipe')}
+TAHUN : ${getVal('Tahun')}
+WARNA : ${getVal('Warna')}
+WARNA TNKB : ${getVal('WarnaTNKB')}
+JENIS BBM : ${getVal('BBM')}
+ISI CYLINDER : ${getVal('CC_Formatted')}
+NO. BPKB : ${getVal('BPKB')}
+NO. STNK : ${getVal('STNK')}
+TGL DAFTAR : ${getVal('Tgl')}
+
+════════════════
+👤 PEMILIK KENDARAAN :
+
+NAMA : ${getVal('Nama')}
+NIK : ${getVal('NIK')}
+HP : ${getVal('HP')}
+EMAIL : ${getVal('Email')}
+PEKERJAAN : ${getVal('Pekerjaan')}
+
+════════════════
+📍 ALAMAT PEMILIK :
+
+${getVal('Alamat')}
+
+════════════════`}
                                 </div>
                                 <div className="mt-8 space-y-4 w-full">
                                     <button type="button" onClick={() => {
