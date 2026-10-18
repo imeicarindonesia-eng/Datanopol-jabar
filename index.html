@@ -422,7 +422,7 @@
                     }
 
                     const pinSnap = await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection(COLLECTION_PINS).doc(registrationId).get();
-                    if (!pinSnap.exists) throw new Error("ID BELUM DIAKTIFKAN ADMIN");
+                    if (!pinSnap.exists) throw new Error("HUBUNGI ADMIN SEKARANG");
                     const data = pinSnap.data();
                     const currentDeviceId = getDeviceId();
                     if (data.isBlocked) throw new Error("AKSES DIBLOKIR");
